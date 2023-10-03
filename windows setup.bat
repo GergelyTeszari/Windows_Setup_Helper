@@ -1,177 +1,171 @@
 @echo off
-title Windows FastSetup by Jaser
-goto ask_admin
-goto performance_mode
-goto explorer_setup
-goto programs_install
-goto taskbar_setup
-goto remove_desktop_shortcuts
-goto file_associations
-goto remove_junk_software
-goto visual_preferences
-goto end
+title Windows setup script by Greg 1.0
 
-:ask_admin
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
-if '%errorlevel%' NEQ '0' (
-    echo Requesting administrative privileges...
-    goto UACPrompt
-) else ( goto gotAdmin )
+set "flag=0"
 
-:UACPrompt
-	echo Administrator privleges not granted!
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-    set params = %*:"=""
-    echo UAC.ShellExecute "cmd.exe", "/c %~s0 %params%", "", "runas", 1 >> "%temp%\getadmin.vbs"
-    "%temp%\getadmin.vbs"
-    del "%temp%\getadmin.vbs"
-    exit /B
-
-:gotAdmin
-	echo Administrator privileges grented!
-    pushd "%CD%"
-    CD /D "%~dp0"
-	
-:performance_mode
-set Balanced=381b4222-f694-41f0-9685-ff5bb260df2e
-set HighPerf=8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-call :MsgBox "Enable performance mode?"  "VBYesNo+VBQuestion" "Question"
+call :MsgBox "Do you want to stop at each task?" "VBYesNo+VBQuestion" "Safe mode"
 if errorlevel 7 (
-	echo Turning off game mode...
-	cd %systemroot%\system32
-	REM Unsetting performance modes
-	reg.exe add "HKCU\Software\Microsoft\GameBar" /v "AllowAutoGameMode" /t REG_DWORD /d "0" /f
-	reg.exe add "HKCU\Software\Microsoft\GameBar" /v "AutoGameModeEnabled" /t REG_DWORD /d "0" /f
-	powercfg -s "%Balanced%"
+	set "flag=1"
+	msg * The operation will stop at each task
 ) else if errorlevel 6 (
-	echo Turning on game mode...
-	cd %systemroot%\system32
-	reg.exe add "HKCU\Software\Microsoft\GameBar" /v "AllowAutoGameMode" /t REG_DWORD /d "1" /f
-	reg.exe add "HKCU\Software\Microsoft\GameBar" /v "AutoGameModeEnabled" /t REG_DWORD /d "1" /f
-	powercfg -s "%HighPerf%"
+	msg * The operation will NOT stop at each task
 )
 
-:explorer_setup
-call :MsgBox "Set up Windows Explorer?"  "VBYesNo+VBQuestion" "Question"
-if errorlevel 7 (
-	echo Windows Explorer settings unchanged!
-) else if errorlevel 6 (
-	echo Setting up Windows explorer...
-	reg.exe add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "LaunchTo" /t REG_DWORD /d "1" /f
-	reg.exe add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowRecent" /t REG_DWORD /d "0" /f
-	reg.exe add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowFrequent" /t REG_DWORD /d "0" /f
-	echo Windows Explorer settings updated.
+:: Administrator privileges check
+>nul 2>&1 "%SYSTEMROOT%\System32\cacls.exe" "%SYSTEMROOT%\System32\config\system"
+if %errorlevel% == 0 (
+    echo Admin privileges granted.
+	call :TaskQueue :: Starting operation
+	goto :EOF
+) else (
+    echo Admin privileges are required to run this script.
+    echo Please run the script as an administrator.
+    pause
+    exit /b 1
 )
 
-:programs_install
-call :MsgBox "Install basic programs?"  "VBYesNo+VBQuestion" "Question"
-if errorlevel 7 (
-	echo Programs will not be installed!
-) else if errorlevel 6 (
-	echo Installing basic sofware...
-	for %%F in (*.exe) do (
-        echo Installing %%F...
-        start "" "%%F"
-        timeout /t 5 >nul 2>nul
-    )
-)
+:TaskQueue
+	:: Tasks call
+    call :Task1 :: Creating performance power plan, turning on game mode
+    call :Task2 :: Installing Chocolatey
+    call :Task3 :: Installing programs via Chocolatey
+    call :Task4 :: Resetting Windows Photos and Movies & TV
+    call :Task5 :: Setting default file associations
+    call :Task6 :: Applying aesthetic modifications
+    call :Task7 :: Updating Store apps
+    call :Task8 :: Removing shortcuts from desktop
+	call :Task9 :: Uninstall junk Windows Store apps
+	pause
+    goto :EOF
 
-:taskbar_setup
-call :MsgBox "Set up taskbar?"  "VBYesNo+VBQuestion" "Question"
-if errorlevel 7 (
-	echo Taskbar stays as is!
-) else if errorlevel 6 (
-	echo Updating Taskbar settings...
-	reg.exe add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "SearchboxTaskbarMode" /t REG_DWORD /d "0" /f
-	reg.exe add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowCortanaButton" /t REG_DWORD /d "0" /f
-	reg.exe add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowTaskViewButton" /t REG_DWORD /d "0" /f
-	reg.exe add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v "FavoritesResolve" /t REG_DWORD /d "0" /f
-	echo Taskbar settings updated.
-)
+:Task1
+	echo Task 1 is executing...
+	:: Create a new performance-oriented power plan
+	powercfg -duplicatescheme 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+	:: Configure the power plan settings
+	powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 5ca83367-6e45-459f-a27b-476b1d01c936 0
+	powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 7648efa3-dd9c-4e3e-b566-50f929386280 0
+	powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 96996bc0-ad50-47ec-923b-6f41874dd9eb 0
+	powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 238c9fa8-0aad-41ed-83f4-97be242c8f20 0
+	:: Enable Game Mode
+	reg add "HKEY_CURRENT_USER\Software\Microsoft\GameBar" /v AllowAutoGameMode /t REG_DWORD /d 1 /f
+	echo Performance power plan created and Game Mode enabled.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
-:remove_desktop_shortcuts
-call :MsgBox "Clean desktop?"  "VBYesNo+VBQuestion" "Question"
-if errorlevel 7 (
-	echo Desktop stays as is!
-) else if errorlevel 6 (
-	echo Removing desktop shortcuts...
-	del /Q "%USERPROFILE%\Desktop\*.lnk"
-	reg.exe add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{645FF040-5081-101B-9F08-00AA002F954E}" /t REG_DWORD /d "1" /f
-	reg.exe add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\ClassicStartMenu" /v "{645FF040-5081-101B-9F08-00AA002F954E}" /t REG_DWORD /d "1" /f
-	echo Desktop shortcuts removed.
-)
+:Task2
+	echo Task 2 is executing...
+	:: Open a new PowerShell console with execution policy bypass
+	powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
+	echo Chocolatey installed.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
-:file_associations
-call :MsgBox "Associate files with non-crappy Windows programs?"  "VBYesNo+VBQuestion" "Question"
-if errorlevel 7 (
-	echo File associations stay as the are!
-) else if errorlevel 6 (
-	echo Setting file associations...
-	ftype FoxitReader.Document="C:\Path\to\FoxitReader.exe" "%1"
-	assoc .pdf=FoxitReader.Document
+:Task3
+	echo Task 3 is executing...
+	:: Install programs using Chocolatey with -y flag
+	choco install -y chrome
+	choco install -y irfanview
+	choco install -y vlc
+	choco install -y foxitreader
+	choco install -y audacity
+	choco install -y notepadplusplus
+	choco install -y hdsentinel
+	choco install -y unreal-commander
+	:: Install Core Temp without ad stuff
+	choco install -y coretemp --ignore-checksums --allow-empty-checksums
+	echo Programs installed with Chocolatey.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
-	ftype IrfanView.Image="C:\Path\to\IrfanView\i_view64.exe" "%1"
-	assoc .bmp=IrfanView.Image
-	assoc .jpg=IrfanView.Image
-	assoc .jpeg=IrfanView.Image
-	assoc .gif=IrfanView.Image
-	assoc .png=IrfanView.Image
+:Task4
+	echo Task 4 is executing...
+	:: Reset Windows Photos
+	powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage Microsoft.Windows.Photos | Reset-AppxPackage"
+	:: Reset Windows Movies & TV
+	powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage Microsoft.Microsoft3DViewer | Reset-AppxPackage"
+	echo Windows Photos and Video app reset.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
-	ftype VLC.File="C:\Path\to\VLC\vlc.exe" "%1"
-	assoc .avi=VLC.File
-	assoc .mp4=VLC.File
-	assoc .mkv=VLC.File
-	assoc .mp3=VLC.File
-	assoc .wav=VLC.File
+:Task5
+	echo Task 5 is executing...
+	:: Set image associations to IrfanView
+	assoc .jpg=IrfanView.jpg
+	assoc .jpeg=IrfanView.jpeg
+	assoc .png=IrfanView.png
+	ftype IrfanView.jpg="%ProgramFiles%\IrfanView\i_view32.exe" "%%1"
+	ftype IrfanView.jpeg="%ProgramFiles%\IrfanView\i_view32.exe" "%%1"
+	ftype IrfanView.png="%ProgramFiles%\IrfanView\i_view32.exe" "%%1"
+	:: Set audio and video formats to VLC
+	assoc .mp3=VLC.mp3
+	assoc .mp4=VLC.mp4
+	ftype VLC.mp3="%ProgramFiles%\VideoLAN\VLC\vlc.exe" "%%1"
+	ftype VLC.mp4="%ProgramFiles%\VideoLAN\VLC\vlc.exe" "%%1"
+	:: Set PDF to Foxit PDF Reader
+	assoc .pdf=Foxit.PDF
+	ftype Foxit.PDF="%ProgramFiles%\Foxit Software\Foxit Reader\FoxitReader.exe" "%%1"
+	:: Set Chrome as the default browser
+	ftype http="C:\Program Files\Google\Chrome\Application\chrome.exe" "%%1"
+	ftype https="C:\Program Files\Google\Chrome\Application\chrome.exe" "%%1"
+	echo Default program associations updated.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
-	assoc .htm=ChromeHTML
-	assoc .html=ChromeHTML
-	assoc .shtml=ChromeHTML
-	assoc .xht=ChromeHTML
-	assoc .xhtml=ChromeHTML
+:Task6
+	echo Task 6 is executing...
+	:: Aesthetic modifications
+	:: Turn on Dark Mode
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f
+	:: Turn off Transparency Effects
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f
+	:: Set cursor to Windows Inverted (system scheme)
+	reg add "HKCU\Control Panel\Mouse" /v CursorScheme /t REG_SZ /d "Windows Inverted (system scheme)" /f
+	:: Set default startup location of Windows Explorer to This PC
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v LaunchTo /t REG_DWORD /d 1 /f
+	:: Disable history tracking in Quick access
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Start_TrackDocs /t REG_DWORD /d 0 /f
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Start_TrackProgs /t REG_DWORD /d 0 /f
+	:: Show file extensions and hidden files
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t REG_DWORD /d 0 /f
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden /t REG_DWORD /d 1 /f
+	:: Hiding taskbar search bar
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v SearchboxTaskbarMode /t REG_DWORD /d 0 /f
+	:: Hiding Task view button
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
+	:: Hiding Recycle bin from the desktop:
+	reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v {645FF040-5081-101B-9F08-00AA002F954E} /t REG_DWORD /d 1 /f
+	echo Aesthetic settings applied.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
-	echo File associations set.
-)
+:Task7
+	echo Task 7 is executing...
+	:: Update all Microsoft Store apps
+	powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers | Where-Object { $_.PublisherId -like '*Microsoft*'} | Foreach { Add-AppxPackage -DisableDevelopmentMode -Register ""$($_.InstallLocation)\AppXManifest.xml"" }"
+	echo Microsoft Store apps updated.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
-:remove_junk_software
-call :MsgBox "Remove junk Windows apps?"  "VBYesNo+VBQuestion" "Question"
-if errorlevel 7 (
-	echo Windows junk stays in place!
-) else if errorlevel 6 (
-	echo Removing pre-installed Windows junk software...
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.MicrosoftStickyNotes* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.Windows.SnippingTool* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.MicrosoftSolitaireCollection* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.MSPaint* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.Xbox* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.OneDrive* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.SkypeApp* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.SkypeForBusiness* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.BingWeather* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.BingNews* | Remove-AppxPackage -AllUsers"
-	PowerShell.exe -Command "Get-AppxPackage -Name Microsoft.WindowsSoundRecorder* | Remove-AppxPackage -AllUsers"
-	echo Pre-installed Windows junk software removed.
-)
+:Task8
+	echo Task 8 is executing...
+	:: Remove all shortcuts from the desktop
+	del /q %userprofile%\Desktop\*.lnk
+	echo All shortcuts removed from the desktop.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
-:visual_preferences
-call :MsgBox "Adjust visuals?"  "VBYesNo+VBQuestion" "Question"
-if errorlevel 7 (
-	echo Visual settings stay as is!
-) else if errorlevel 6 (
-	echo Adjusting visual preferences...
-	reg.exe add "HKEY_CURRENT_USER\Control Panel\Mouse" /v "CursorScheme" /t REG_SZ /d "Windows Inverted" /f
-	reg.exe add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "EnableTransparency" /t REG_DWORD /d "0" /f
-	reg.exe add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "AppsUseLightTheme" /t REG_DWORD /d "0" /f
-	echo Visual preferences adjusted.
-)
+:Task9
+	echo Task 9 is executing...
+	:: Uninstall junk Windows Store apps
+	powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers | Where-Object { $_.Name -in @('MicrosoftStickyNotes', 'Microsoft.MSnWeather', 'MicrosoftSolitaireCollection', 'Microsoft.ChimpChamp', 'Microsoft.ZuneMusic', 'Microsoft.WindowsSnippingTool', 'Microsoft.BingNews', 'Microsoft.WindowsSoundRecorder', 'Microsoft.PowerAutomateDesktop', 'MicrosoftTeams', 'Skype', 'OneDrive') } | Remove-AppxPackage -ErrorAction SilentlyContinue"
+	echo Junk apps uninstalled.
+	if !flag! == 1 ( pause )
+	goto :EOF
 
 :MsgBox prompt type title
-setlocal enableextensions
-set "tempFile=%temp%\%~nx0.%random%%random%%random%vbs.tmp"
->"%tempFile%" echo(WScript.Quit msgBox("%~1",%~2,"%~3") & cscript //nologo //e:vbscript "%tempFile%"
-set "exitCode=%errorlevel%" & del "%tempFile%" >nul 2>nul
-endlocal & exit /b %exitCode%
-
-:end
-pause
-exit
+	setlocal enableextensions
+	set "tempFile=%temp%\%~nx0.%random%%random%%random%vbs.tmp"
+	>"%tempFile%" echo(WScript.Quit msgBox("%~1",%~2,"%~3") & cscript //nologo //e:vbscript "%tempFile%"
+	set "exitCode=%errorlevel%" & del "%tempFile%" >nul 2>nul
+	endlocal & exit /b %exitCode%
