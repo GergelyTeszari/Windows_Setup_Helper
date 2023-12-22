@@ -339,10 +339,32 @@ if %errorlevel% == 0 (
     :: Aesthetic modifications
     :: Turn on Dark Mode
     reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f
     :: Turn off Transparency Effects
     reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f
     :: Set cursor to Windows Inverted (system scheme)
-    reg add "HKCU\Control Panel\Mouse" /v CursorScheme /t REG_SZ /d "Windows Inverted (system scheme)" /f
+    reg add "HKCU\Control Panel\Cursors" /v "AppStarting" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\wait_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "Arrow" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\arrow_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "ContactVisualization" /t REG_DWORD /d "1" /f
+    reg add "HKCU\Control Panel\Cursors" /v "Crosshair" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\cross_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "CursorBaseSize" /t REG_DWORD /d "32" /f
+    reg add "HKCU\Control Panel\Cursors" /v "GestureVisualization" /t REG_DWORD /d "31" /f
+    reg add "HKCU\Control Panel\Cursors" /v "Hand" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\aero_link_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "Help" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\help_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "IBeam" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\beam_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "No" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\no_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "NWPen" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\pen_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "Scheme Source" /t REG_DWORD /d "2" /f
+    reg add "HKCU\Control Panel\Cursors" /v "SizeAll" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\move_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "SizeNESW" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\size1_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "SizeNS" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\size4_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "SizeNWSE" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\size2_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "SizeWE" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\size3_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "UpArrow" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\up_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "Wait" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\busy_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /ve /t REG_SZ /d "Windows Inverted" /f
+    reg add "HKCU\Control Panel\Cursors" /v "Pin" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\pin_i.cur" /f
+    reg add "HKCU\Control Panel\Cursors" /v "Person" /t REG_EXPAND_SZ /d "%%SystemRoot%%\cursors\person_i.cur" /f
     :: Set default startup location of Windows Explorer to This PC
     reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v LaunchTo /t REG_DWORD /d 1 /f
     :: Disable history tracking in Quick access
@@ -366,8 +388,10 @@ if %errorlevel% == 0 (
 :Task7
     echo Task 7 is executing...
     :: Update all Microsoft Store apps
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers | Where-Object { $_.PublisherId -like '*Microsoft*'} | Foreach { Add-AppxPackage -DisableDevelopmentMode -Register ""$($_.InstallLocation)\AppXManifest.xml"" }"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "winget upgrade --all --accept-source-agreements --accept-package-agreements"
     echo Microsoft Store apps updated.
+    :: Update all apps using Chocolatey
+    choco upgrade all
     :: Incrementing history
     reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 7 /f >nul 2>&1
     call :Update_local_run_history
@@ -386,7 +410,7 @@ if %errorlevel% == 0 (
 :Task9
     echo Task 9 is executing...
     :: Uninstall junk Windows Store apps
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers | Where-Object { $_.Name -in @('MicrosoftStickyNotes', 'Microsoft.MSnWeather', 'MicrosoftSolitaireCollection', 'Microsoft.ChimpChamp', 'Microsoft.ZuneMusic', 'Microsoft.WindowsSnippingTool', 'Microsoft.BingNews', 'Microsoft.WindowsSoundRecorder', 'Microsoft.PowerAutomateDesktop', 'MicrosoftTeams', 'Skype', 'OneDrive') } | Remove-AppxPackage -ErrorAction SilentlyContinue"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers | Where-Object { $_.Name -in @('MicrosoftStickyNotes', 'Microsoft.MSnWeather', 'MicrosoftSolitaireCollection', 'Microsoft.ChimpChamp', 'Microsoft.WindowsSnippingTool', 'Microsoft.BingNews', 'Microsoft.WindowsSoundRecorder', 'Microsoft.PowerAutomateDesktop', 'MicrosoftTeams', 'Skype', 'OneDrive') } | Remove-AppxPackage -ErrorAction SilentlyContinue"
     echo Junk apps uninstalled.
     :: Incrementing history
     reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 9 /f >nul 2>&1
