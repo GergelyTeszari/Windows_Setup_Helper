@@ -1,40 +1,39 @@
 @echo off
 
-set win_ver = 0
-set run_history = 0
+set win_ver=0
+set run_history=0
 
 :: Administrator privileges check
 >nul 2>&1 "%SYSTEMROOT%\System32\cacls.exe" "%SYSTEMROOT%\System32\config\system"
-if %errorlevel% == 0 (
+if %errorlevel%==0 (
     echo Admin privileges granted.
     :: Tasks call
     call :Windows_version_check
     call :Check_for_previous_runs
-    if %run_history% == 0 (
+    if %run_history%==0 (
         call :Task1 :: Creating performance power plan, turning on game mode
-    ) else if %run_history% == 1 (
+    ) else if %run_history%==1 (
         call :Check_for_internet_connection
         call :Task2 :: Installing Chocolatey
-    ) else if %run_history% == 2 (
+    ) else if %run_history%==2 (
         call :Check_for_internet_connection
         call :Task3 :: Installing programs via Chocolatey        
-    ) else if %run_history% == 3 (
+    ) else if %run_history%==3 (
         call :Task4 :: Resetting Windows Photos and Movies & TV        
-    ) else if %run_history% == 4 (
+    ) else if %run_history%==4 (
         call :Task5 :: Setting default file associations
-    ) else if %run_history% == 5 (
+    ) else if %run_history%==5 (
         call :Task6 :: Applying aesthetic modifications
-    ) else if %run_history% == 6 (
+    ) else if %run_history%==6 (
         call :Check_for_internet_connection
         call :Task7 :: Updating Store apps
-    ) else if %run_history% == 7 (
+    ) else if %run_history%==7 (
         call :Task8 :: Removing shortcuts from desktop
-    ) else if %run_history% == 8 (
+    ) else if %run_history%==8 (
         call :Task9 :: Uninstall junk Windows Store apps
-    ) else if %run_history% == 9 (
-        :: Task 10
+    ) else if %run_history%==9 (
+        call Task10 :: UNINPLEMENTED
     )
-    
 	pause
     goto :EOF
 ) else (
@@ -125,25 +124,6 @@ if %errorlevel% == 0 (
     )
     goto :EOF
 
-:Task1
-    echo Task 1 is executing...
-    :: Create a new performance-oriented power plan
-    powercfg -duplicatescheme 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-    :: Configure the power plan settings
-    powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 5ca83367-6e45-459f-a27b-476b1d01c936 0
-    powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 7648efa3-dd9c-4e3e-b566-50f929386280 0
-    powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 96996bc0-ad50-47ec-923b-6f41874dd9eb 0
-    powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 238c9fa8-0aad-41ed-83f4-97be242c8f20 0
-    :: Activate the newly created power plan
-    powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-    :: Enable Game Mode
-    reg add "HKEY_CURRENT_USER\Software\Microsoft\GameBar" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f
-    echo Performance power plan created and Game Mode enabled.
-    :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 1 /f >nul 2>&1
-    call :Update_local_run_history
-    goto :EOF
-
 :Check_for_internet_connection
     setlocal enabledelayedexpansion
     :: Function to check for internet connection
@@ -168,6 +148,35 @@ if %errorlevel% == 0 (
     if !counter! lss !maxAttempts! goto :PingLoop
 
     echo Maximum attempts reached. Exiting the script.
+    goto :EOF
+
+:Task1
+    echo Task 1 is executing...
+    :: Create a new performance-oriented power plan
+    powercfg -duplicatescheme 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+    :: Configure the power plan settings for battery mode
+    powercfg -setdcvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 5ca83367-6e45-459f-a27b-476b1d01c936 0
+    powercfg -setdcvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 7648efa3-dd9c-4e3e-b566-50f929386280 0
+    :: Configure the power plan settings for plugged-in mode
+    powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 5ca83367-6e45-459f-a27b-476b1d01c936 0
+    powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 7648efa3-dd9c-4e3e-b566-50f929386280 0
+    :: Handle PC-specific settings
+    wmic computersystem get model | find /i /v "Notebook" | find /i /v "Laptop" >nul
+    if %errorlevel% equ 0 (
+        :: Configure PC-specific settings
+        powercfg -setdcvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 96996bc0-ad50-47ec-923b-6f41874dd9eb 0
+        powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 96996bc0-ad50-47ec-923b-6f41874dd9eb 0
+        powercfg -setdcvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 238c9fa8-0aad-41ed-83f4-97be242c8f20 0
+        powercfg -setacvalueindex 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c 4f971e89-eebd-4455-a8de-9e59040e7347 238c9fa8-0aad-41ed-83f4-97be242c8f20 0
+    )
+    :: Activate the newly created power plan
+    powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+    :: Enable Game Mode
+    reg add "HKEY_CURRENT_USER\Software\Microsoft\GameBar" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f
+    echo Performance power plan created and Game Mode enabled.
+    :: Incrementing history
+    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 1 /f >nul 2>&1
+    call :Update_local_run_history
     goto :EOF
 
 :Task2
@@ -414,5 +423,12 @@ if %errorlevel% == 0 (
     echo Junk apps uninstalled.
     :: Incrementing history
     reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 9 /f >nul 2>&1
+    call :Update_local_run_history
+    goto :EOF
+
+:Task10
+    echo Task 10 is executing...
+    :: Incrementing history
+    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 10 /f >nul 2>&1
     call :Update_local_run_history
     goto :EOF
