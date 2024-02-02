@@ -32,7 +32,9 @@ if %errorlevel%==0 (
     ) else if %run_history%==8 (
         call :Task9 :: Uninstall junk Windows Store apps
     ) else if %run_history%==9 (
-        call Task10 :: UNINPLEMENTED
+        call Task10 :: Update all drivers
+    ) else if %run_history%==10 (
+        call Task11 :: UNINPLEMENTED
     )
 	pause
     goto :EOF
@@ -426,9 +428,22 @@ if %errorlevel%==0 (
     call :Update_local_run_history
     goto :EOF
 
-:Task10
+:Task10 ::Not yet tested!
     echo Task 10 is executing...
+	:: Installing Driverbooster
+	choco install driverbooster -y
+	echo If you completed the updating, press Enter to remove driver installer utility.
+	cd C:\Program Files (x86)\IObit\Driver Booster\11.2.0 & "Driver Booster 11.lnk"
+	pause
+	choco uninstall driverupdater -y
     :: Incrementing history
     reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 10 /f >nul 2>&1
+    call :Update_local_run_history
+    goto :EOF
+
+:Task11
+    echo Task 11 is executing...
+    :: Incrementing history
+    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 11 /f >nul 2>&1
     call :Update_local_run_history
     goto :EOF
