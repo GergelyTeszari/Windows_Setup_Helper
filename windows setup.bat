@@ -2,6 +2,7 @@
 
 set win_ver=0
 set run_history=0
+set history_file_name=WSH.kredenc
 
 :: Administrator privileges check
 >nul 2>&1 "%SYSTEMROOT%\System32\cacls.exe" "%SYSTEMROOT%\System32\config\system"
@@ -92,43 +93,53 @@ if %errorlevel%==0 (
     ) else (
         echo The script is terminating...
         pause
+		exit /b 1
     )
     endlocal
     exit /b 1
 
+:: History related functions
+
 :Check_for_previous_runs
-    reg query "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo Run history not found.
-        call :Create_run_history
+	cd %USERPROFILE%
+	if exist %history_file_name% (
+		echo Run history found.
+        call :Load_local_run_history
+        echo Restored to local variable: %run_history%
         goto :EOF
     ) else (
-        echo Run history found.
-        call :Update_local_run_history
-        echo Restored to local variable: %run_history%
+        echo Run history not found.
+        call :Create_run_history
         goto :EOF
     )
 
 :Create_run_history
+	cd %USERPROFILE%
     echo Creating run history...
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 0 /f >nul 2>&1
+	echo >%history_file_name%
     echo created empty run history.
     goto :EOF
 
-:Update_local_run_history
-    echo Querying data from registry...
-    for /f "tokens=3" %%A in ('reg query "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state ^| find "REG_DWORD"') do set query_result=%%A
-    if not defined exec_state_from_registry (
-        echo Run history not found, query unsuccesful.
-    ) else (
-        echo Query result from registry: %query_result%
-        set run_history=%query_result:~2%
-    )
+:Load_local_run_history
+    echo Querying data from history storage file...
+	cd %USERPROFILE%
+	for /f "usebackq delims=" %%a in ("%history_file_name%") do (
+    set "run_history=%%a"
+	echo Loaded value: %run_history%
     goto :EOF
+
+:Push_local_run_history
+	echo Writing run history to the storage file...
+	cd %USERPROFILE%
+	if exist %history_file_name% (
+		del %history_file_name%
+	)
+	echo %run_history% > %history_file_name%
+	echo File write successfully finished.
+	goto :EOF
 
 :Check_for_internet_connection
     setlocal enabledelayedexpansion
-    :: Function to check for internet connection
     set "counter=0"
     set "maxAttempts=10"
     set "delaySeconds=2"
@@ -150,7 +161,9 @@ if %errorlevel%==0 (
     if !counter! lss !maxAttempts! goto :PingLoop
 
     echo Maximum attempts reached. Exiting the script.
-    goto :EOF
+	endlocal
+	pause
+	exit /b 1
 
 :Task1
     echo Task 1 is executing...
@@ -177,8 +190,8 @@ if %errorlevel%==0 (
     reg add "HKEY_CURRENT_USER\Software\Microsoft\GameBar" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f
     echo Performance power plan created and Game Mode enabled.
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 1 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=1
+    call :Push_local_run_history
     goto :EOF
 
 :Task2
@@ -187,8 +200,8 @@ if %errorlevel%==0 (
     powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
     echo Chocolatey installed.
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 2 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=2
+    call :Push_local_run_history
     goto :EOF
 
 
@@ -201,8 +214,6 @@ if %errorlevel%==0 (
     choco install Irfanview -y
     echo installing VLC...
     choco install vlc -y
-    echo Installing Foxit PDF reader...
-    choco install FoxitReader -y
     echo Installing Audacity...
     choco install audacity -y
     echo Installing NP++...
@@ -215,8 +226,8 @@ if %errorlevel%==0 (
     choco install coretemp -y
     echo Programs are successfully installed with Chocolatey.
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 3 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=3
+    call :Push_local_run_history
     goto :EOF
 
 :Task4
@@ -227,8 +238,8 @@ if %errorlevel%==0 (
     powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -Name Microsoft.ZuneVideo | Reset-AppxPackage"
     echo Windows Photos and Video app reset.
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 4 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=4
+    call :Push_local_run_history
     goto :EOF
 
 :Task5
@@ -302,7 +313,7 @@ if %errorlevel%==0 (
     SetUserFTA .ogx VLC.ogx
     SetUserFTA .opus VLC.opus
     SetUserFTA .orf IrfanView.orf
-    SetUserFTA .pdf FoxitReader.Document
+    SetUserFTA .pdf ChromeHTML
     SetUserFTA .pef IrfanView.pef
     SetUserFTA .png IrfanView.pngz
     SetUserFTA .raf IrfanView.raf
@@ -341,8 +352,8 @@ if %errorlevel%==0 (
     SetUserFTA read ChromeHTML
     echo Default program associations updated.
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 5 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=5
+    call :Push_local_run_history
     goto :EOF
 
 :Task6
@@ -392,20 +403,20 @@ if %errorlevel%==0 (
     reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v {645FF040-5081-101B-9F08-00AA002F954E} /t REG_DWORD /d 1 /f
     echo Aesthetic settings applied.
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 6 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=6
+    call :Push_local_run_history
     goto :EOF
 
 :Task7
     echo Task 7 is executing...
     :: Update all Microsoft Store apps
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "winget upgrade --all --accept-source-agreements --accept-package-agreements"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "winget update --all --accept-source-agreements --accept-package-agreements"
     echo Microsoft Store apps updated.
     :: Update all apps using Chocolatey
-    choco upgrade all
+    choco upgrade all -y
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 7 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=7
+    call :Push_local_run_history
     goto :EOF
 
 :Task8
@@ -414,8 +425,8 @@ if %errorlevel%==0 (
     del /q %userprofile%\Desktop\*.lnk
     echo All shortcuts removed from the desktop.
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 8 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=8
+    call :Push_local_run_history
     goto :EOF
 
 :Task9
@@ -424,26 +435,27 @@ if %errorlevel%==0 (
     powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Get-AppxPackage -AllUsers | Where-Object { $_.Name -in @('MicrosoftStickyNotes', 'Microsoft.MSnWeather', 'MicrosoftSolitaireCollection', 'Microsoft.ChimpChamp', 'Microsoft.WindowsSnippingTool', 'Microsoft.BingNews', 'Microsoft.WindowsSoundRecorder', 'Microsoft.PowerAutomateDesktop', 'MicrosoftTeams', 'Skype', 'OneDrive') } | Remove-AppxPackage -ErrorAction SilentlyContinue"
     echo Junk apps uninstalled.
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 9 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=9
+    call :Push_local_run_history
     goto :EOF
 
-:Task10 ::Not yet tested!
+:Task10 
+	:: Not yet tested!
     echo Task 10 is executing...
 	:: Installing Driverbooster
 	choco install driverbooster -y
 	echo If you completed the updating, press Enter to remove driver installer utility.
-	cd C:\Program Files (x86)\IObit\Driver Booster\11.2.0 & "Driver Booster 11.lnk"
+	cd "C:\Program Files (x86)\IObit\Driver Booster\11.2.0" & "Driver Booster 11.lnk"
 	pause
 	choco uninstall driverupdater -y
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 10 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=10
+    call :Push_local_run_history
     goto :EOF
 
 :Task11
     echo Task 11 is executing...
     :: Incrementing history
-    reg add "HKCU\Software\Windows_setup_script" /v Windows_setup_script_execution_state /t REG_DWORD /d 11 /f >nul 2>&1
-    call :Update_local_run_history
+	%run_history%=11
+    call :Push_local_run_history
     goto :EOF
