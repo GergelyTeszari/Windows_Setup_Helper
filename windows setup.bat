@@ -134,21 +134,33 @@ if %errorlevel%==0 (
 
 :Task2
     echo Task 3 is executing...
-    :: Install programs using Winget
-    echo Installing Chrome...
-    winget install Google.Chrome
-    echo Installing IrfanView...
-    winget install Irfanview
-    echo installing VLC...
-    winget install VideoLAN.VLC
-    echo Installing NP++...
-    winget install Notepad++.Notepad++
-    echo Installing HD sentinel...
-    winget install JanosMathe.HardDiskSentinel.Standard
-    echo Installing UnCom...
-    winget install MaxDiesel.UnrealCommander
-    echo Installing Core Temp...
+	winget install 7zip.7zip                              
+	winget install AIMP.AIMP                              
+	winget install Audacity.Audacity                      
+	winget install Buanzo.FFmpegforAudacity
+	winget install GIMP.GIMP.3                            
+	winget install IrfanSkiljan.IrfanView                 
+	winget install FlorianHeidenreich.Mp3tag              
+	winget install Notepad++.Notepad++                    
+	winget install VideoLAN.VLC                           
+	winget install Logitech.GHUB                          
+	winget install Google.Chrome                          
+	winget install Plex.PlexMediaServer                   
+	winget install Inkscape.Inkscape                      
+	winget install Microsoft.VisualStudioCode
+	:: Arduino
+	winget install 9NBLGGH4RSD8
+	winget install JanosMathe.HardDiskSentinel.Standard
+	winget install OBSProject.OBSStudio
+	winget install MaxDiesel.UnrealCommander
+	winget install AltDrag.AltDrag                        
+	winget install Gyan.FFmpeg                            
+	winget install WinDirStat.WinDirStat                  
+	winget install Microsoft.PowerToys
+	winget install Notepad++.Notepad++
+	winget install Python.Python.3.11
     winget install ALCPU.CoreTemp
+
     echo Programs are successfully installed with Winget.
 
     goto :EOF
@@ -239,3 +251,4 @@ if %errorlevel%==0 (
 	%run_history%=9
     call :Push_local_run_history
     goto :EOF
+
